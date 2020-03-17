@@ -1,0 +1,129 @@
+---
+output: github_document
+always_allow_html: yes
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  echo = FALSE,
+  comment = "#>"
+)
+
+library(tidyverse)
+library(cowplot)
+library(knitr)
+library(kableExtra)
+
+html_table <- function(dt) {
+  kable(dt) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+}
+```
+
+
+# COVID-19 Infection Fatality Rates
+
+Claus O. Wilke, March 17, 2020
+
+Seasonal influenza fatality rates (from 1997 to 2007) were estimated by [Jesse Bloom.](https://github.com/jbloom/CoV_vs_flu_CFR/blob/master/cfr_stats.ipynb) He took all-cause influenza-associated mortality rates from Table 1 of [Quandelacy et al. (2014)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3873104/) and assumed a 10% incidence rate in the population.
+
+```{r}
+flu_ifr <- read_csv(file =
+"label,age,IFR
+<18,9,0.0041
+18-49,33,0.0103
+50-64,57,0.0718
+65-74,70,0.2637
+>=75,80,1.4115") %>%
+  mutate(
+    disease = "Seasonal Influenza"
+  )
+
+html_table(flu_ifr)
+```
+
+COVID-19 fatality rate data are taken from Table 1 from [Ferguson et al. (2020).](https://www.imperial.ac.uk/media/imperial-college/medicine/sph/ide/gida-fellowships/Imperial-College-COVID19-NPI-modelling-16-03-2020.pdf) Importantly, these rates are corrected for infections that remain undetected (i.e., do not become cases). Actual case fatality rates are approximately a factor of 2 higher, see [Verity et al. (2020),](https://www.medrxiv.org/content/10.1101/2020.03.09.20033357v1) Table 1.
+
+```{r}
+covid19_ifr <- read_csv(file =
+"label,age,IFR
+0-9,5,0.002
+10-19,15,0.006
+20-29,25,0.03
+30-39,35,0.08
+40-49,45,0.15
+50-59,55,0.6
+60-69,65,2.2
+70-79,75,5.1
+>=80,85,9.3") %>%
+  mutate(
+    disease = "COVID-19"
+  )
+
+html_table(covid19_ifr)
+```
+
+We now combine these two datasets and plot them. We use a log scale for the y axis because it will show a uniform increase in risk as a shift of one curve relative to the other.
+
+```{r}
+df <- rbind(flu_ifr, covid19_ifr)
+
+p <- ggplot(df, aes(age, IFR, color = disease)) +
+  geom_line(size = 1.5) +
+  xlab("Age (years)") +
+  scale_y_log10(
+    name = "Infection Fatality Rate (%)",
+    limits = c(0.001, 11),
+    breaks = c(1e-3, 1e-2, 1e-1, 1, 10),
+    labels = c("0.001", "0.01", "0.1", "1", "10"),
+    expand = c(0, 0)
+  ) +
+  scale_color_manual(
+    name = NULL,
+    values = c(`COVID-19` = "#D55E00", `Seasonal Influenza` = "#0072B2")
+  ) +
+  theme_minimal_hgrid() +
+  theme(
+    axis.line.x = element_blank(),
+    legend.position = c(1, 0.05),
+    legend.justification = c(1, 0)
+  ) +
+  coord_cartesian(clip = "off")
+
+save_plot("COVID-19_log.png", p)
+p
+```
+
+We see that indeed the COVID-19 curve is systematically shifted relative to the seasonal influenza curve, by approximately a factor of 5-10. (The fatality rate estimates are too imprecise to try to quantify this more accurately from this type of a crude analysis.)
+
+For comparison, we can also use a linear scale for the y axis. This representation emphasizes the high risk that COVID-19 poses for the elderly, but it hides the fact that for younger people COVID-19 is also much more risky than the seasonal influenza.
+
+```{r}
+p <- ggplot(df, aes(age, IFR, color = disease)) +
+  geom_line(size = 1.5) +
+  xlab("Age (years)") +
+  scale_y_continuous(
+    name = "Infection Fatality Rate (%)",
+    limits = c(0, 14),
+    breaks = c(0, 2.5, 5, 7.5, 10, 12.5),
+    labels = c("0", "", "5", "", "10", ""),
+    expand = c(0, 0)
+  ) +
+  scale_color_manual(
+    name = NULL,
+    values = c(`COVID-19` = "#D55E00", `Seasonal Influenza` = "#0072B2")
+  ) +
+  theme_minimal_hgrid() +
+  theme(
+    axis.line.x = element_blank(),
+    legend.position = c(.1, .9),
+    legend.justification = c(0, 1)
+  ) +
+  coord_cartesian(clip = "off")
+
+save_plot("COVID-19_linear.png", p)
+p
+```
