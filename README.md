@@ -5,6 +5,9 @@
 
 Claus O. Wilke, March 17, 2020
 
+To see the code that produced this document, please click
+[here.](https://github.com/clauswilke/COVID19-IFR/blob/master/README.Rmd)
+
 Seasonal influenza fatality rates (from 1997 to 2007) were estimated by
 [Jesse
 Bloom.](https://github.com/jbloom/CoV_vs_flu_CFR/blob/master/cfr_stats.ipynb)
